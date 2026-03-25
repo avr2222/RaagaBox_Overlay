@@ -433,6 +433,8 @@
 </div>
 
 <script>
+    // Fallback KVDB URL used when config.json is not available (e.g. GitHub Pages)
+    const KVDB_URL_FALLBACK = "__KVDB_URL__";
     let KVDB_URL = null;
     let isHidden = false;
 
@@ -441,6 +443,7 @@
             const res = await fetch('config.json', { cache: 'no-store' });
             if (res.ok) { const cfg = await res.json(); KVDB_URL = cfg.kvdb_url; }
         } catch (e) { console.warn("Could not load config.json", e); }
+        if (!KVDB_URL) KVDB_URL = KVDB_URL_FALLBACK;
     }
 
     // Auto-generate 2–3 letter abbreviation (e.g. "Team E- Super Sapphire" → "SS")
