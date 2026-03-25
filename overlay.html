@@ -566,15 +566,15 @@
             // 4. LIVE
             showOverlay();
             document.getElementById('live-indicator').style.display = 'flex';
-            document.getElementById('status').innerText = stat || 'IN PROGRESS';
-
             // Show target for 2nd innings, hide for 1st
             const targetEl = document.getElementById('target-info');
             if (data.target) {
                 targetEl.innerText = 'Target: ' + data.target;
                 targetEl.style.display = 'block';
+                document.getElementById('status').innerText = '';
             } else {
                 targetEl.style.display = 'none';
+                document.getElementById('status').innerText = stat || 'IN PROGRESS';
             }
 
             const batsmen = Array.isArray(data.batsmen) ? data.batsmen : [];
