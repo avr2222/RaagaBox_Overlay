@@ -1,0 +1,10 @@
+# Secrets — never commit the real config
+config.json
+
+# Logs
+scraper.log*
+*.log
+
+# Python cache
+__pycache__/
+*.pyc

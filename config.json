@@ -1,8 +1,11 @@
 {
   "kvdb_url": "https://kvdb.io/BYZVP2VXarW5EsxpLJoD9M/score",
-  "tournament_url": "https://cricheroes.com/tournament/1935786/gsrc-sukg-league-2026",
+  "tournament_id": "1860056",
+  "tournament_slug": "pcc-pearl-night-s-x",
   "poll_interval_live": 10,
   "poll_interval_standby": 60,
   "no_live_timeout": 15,
-  "headless": false
+  "headless": false,
+  "telegram_bot_token": "8679482131:AAEYt40FE7nb9czOcMSUYWVwUU8077HOLVE",
+  "telegram_chat_id": "684229417"
 }

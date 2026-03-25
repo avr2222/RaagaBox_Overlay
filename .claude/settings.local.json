@@ -15,7 +15,20 @@
       "Bash(cmd /c \"taskkill /PID 36732 /F & taskkill /PID 20076 /F & taskkill /PID 20148 /F\")",
       "Bash(cmd /c \"taskkill /F /PID 36732\")",
       "Bash(cmd /c \"taskkill /F /PID 20076\")",
-      "Bash(cmd /c \"taskkill /F /PID 20148\")"
+      "Bash(cmd /c \"taskkill /F /PID 20148\")",
+      "Bash(powershell -Command \"Stop-Process -Id 36732,20076,20148 -Force\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X PUT \"https://kvdb.io/BYZVP2VXarW5EsxpLJoD9M/score\" -H \"Content-Type: application/json\" -d \"{\"\"test\"\": true}\")",
+      "Bash(curl -s -X PUT \"https://kvdb.io/BYZVP2VXarW5EsxpLJoD9M/score\" -d \"hello\")",
+      "Bash(powershell -Command \"Stop-Process -Id 36488 -Force\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(powershell -Command \"Stop-Process -Id 18020 -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 42484,49264 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Stop-Process -Id 41508,21620 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Get-Process python* | Where-Object {$_Id -notin @\\(46332,47384\\)} | Stop-Process -Force\")",
+      "Bash(powershell -Command \"Get-Process python* | Where-Object { $_Id -notin @\\(46332,47384\\) } | Stop-Process -Force\")",
+      "Bash(powershell -Command \"Stop-Process -Id 41508 -Force; Stop-Process -Id 21620 -Force\")",
+      "Bash(cmd /c stop.bat)",
+      "Bash(start cmd:*)"
     ]
   }
 }

@@ -4,483 +4,625 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Score Overlay</title>
-    <!-- Modern sports fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600&family=Montserrat:wght@700;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        * { box-sizing: border-box; }
+
         body {
-            /* Keep body transparent so the video feed shows underneath! */
             background-color: transparent !important;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             height: 100vh;
-            overflow: hidden; 
+            overflow: hidden;
             display: flex;
             align-items: flex-end;
             justify-content: center;
         }
 
         .overlay-container {
-            width: 90%;
-            max-width: 1200px;
-            margin-bottom: 30px;
-            position: relative;
+            width: 92%;
+            max-width: 1280px;
+            margin-bottom: 28px;
         }
 
-        .player-info-wrapper {
-            width: 100%;
-            display: flex;
-            background: linear-gradient(90deg, #15274D, #091328);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: slideUp 1s forwards ease-out 0.8s;
-            font-family: 'Roboto', sans-serif;
-            color: white;
-            padding: 5px 10px;
-            box-sizing: border-box;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap; 
-            gap: 5px 15px; /* row gap, column gap */
-            font-size: clamp(10px, 2.5vw, 14px);
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
-            z-index: 5;
-            min-height: 32px;
-        }
-
+        /* ── ANIMATIONS ── */
         @keyframes slideUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes slideDown {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(80px);
-            }
+            from { opacity: 1; transform: translateY(0); }
+            to   { opacity: 0; transform: translateY(80px); }
+        }
+        @keyframes livePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.8); }
+            70%  { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
 
         .hiding {
             animation: slideDown 1.2s forwards ease-in !important;
         }
-        .scoreboard-wrapper {
-            width: 100%;
-            height: auto;
-            min-height: 60px;
+
+        /* ── PLAYER INFO BAR ── */
+        .player-info-wrapper {
             display: flex;
-            flex-direction: row;
-            background: linear-gradient(90deg, #091328 0%, #15274D 50%, #091328 100%);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-bottom: 4px solid #F3A900; 
-            border-radius: 0 0 8px 8px; /* Rounded only at bottom when player panel is shown */
+            align-items: center;
+            background: linear-gradient(90deg, #080F1E 0%, #0E1C35 40%, #0E1C35 60%, #080F1E 100%);
+            border: 1px solid rgba(243, 169, 0, 0.2);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            padding: 0 18px;
+            height: 36px;
+            gap: 0;
             opacity: 0;
-            transform: translateY(20px);
-            animation: slideUp 1s forwards ease-out 0.5s; 
-            z-index: 10;
+            animation: slideUp 0.8s forwards ease-out 0.9s;
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px;
+            overflow: hidden;
         }
 
-        .teams-block {
-            background: linear-gradient(135deg, #F3A900 0%, #D88900 100%);
-            color: #0b1120;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .section-label {
             font-family: 'Montserrat', sans-serif;
-            font-size: clamp(14px, 3.5vw, 22px);
+            font-size: 8.5px;
             font-weight: 800;
+            letter-spacing: 1.8px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            position: relative;
-            z-index: 1;
-            flex: 1;
-            text-align: center;
-        }
-
-        .teams-block::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: -20px;
-            bottom: 0;
-            width: 30px;
-            background: inherit;
-            transform: skewX(-20deg);
-            z-index: -1;
-        }
-
-        .score-block {
-            flex: 1.5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px 15px;
-            z-index: 1;
-            flex-wrap: wrap;
-        }
-
-        .score-number {
-            font-family: 'Teko', sans-serif;
-            font-size: clamp(35px, 8vw, 58px);
-            color: #FFFFFF;
-            line-height: 1;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            margin-top: 5px; 
             white-space: nowrap;
+            padding-right: 10px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            margin-right: 10px;
         }
+        .section-label.batting  { color: #F3A900; }
+        .section-label.bowling  { color: #7EC8E3; border: none; padding: 0; margin-right: 8px; }
 
-        .overs-number {
-            font-family: 'Roboto', sans-serif;
-            font-size: clamp(12px, 3.5vw, 18px);
-            color: #88A6D6; 
-            font-weight: 700;
-            margin-left: 10px;
-            margin-top: 5px;
-            white-space: nowrap;
-        }
-
-        .status-block {
-            background: rgba(0,0,0,0.3);
-            border-left: 1px solid rgba(255,255,255,0.1);
-            padding: 10px 15px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Roboto', sans-serif;
-            font-size: clamp(10px, 2.5vw, 14px);
-            font-weight: 700;
-            color: #C0D1EB;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            flex: 0.8;
-            text-align: center;
-            flex-wrap: wrap;
-        }
-
-        .live-indicator {
-            background-color: #E2211C;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            margin-left: 10px;
-            display: flex;
-            align-items: center;
-            animation: pulse 1.5s infinite;
-            white-space: nowrap;
-            margin-top: 2px;
-        }
-
-        .stale-indicator {
-            background-color: #888;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            margin-left: 10px;
-            display: none;
-            align-items: center;
-            white-space: nowrap;
-            margin-top: 2px;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(226, 33, 28, 0.7); }
-            50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(226, 33, 28, 0); }
-            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(226, 33, 28, 0); }
-        }
-
-        .live-dot {
-            width: 5px;
-            height: 5px;
-            background-color: white;
-            border-radius: 50%;
-            margin-right: 4px;
-        }
-
-        /* Player Stats Styling */
         .player-detail {
             display: flex;
             align-items: center;
             white-space: nowrap;
+            padding: 0 10px;
+        }
+        .player-detail + .player-detail {
+            border-left: 1px solid rgba(255,255,255,0.08);
         }
 
-        .player-name {
+        .striker-dot {
+            width: 6px; height: 6px;
+            background: #F3A900;
+            border-radius: 50%;
+            margin-right: 7px;
+            flex-shrink: 0;
+        }
+
+        .p-name {
             font-weight: 700;
-            margin-right: 5px;
             text-transform: uppercase;
-            color: #DDE6ED;
+            color: #D8E6F3;
+            letter-spacing: 0.3px;
+            margin-right: 6px;
+            font-size: 11px;
+        }
+        .p-runs {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            color: #F3A900;
+            line-height: 1;
+        }
+        .p-balls {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            color: #5A7A9A;
+            margin-left: 2px;
         }
 
-        .player-stats {
-            color: #F3A900;
+        .bar-spacer { flex: 1; }
+
+        .bowler-name-text {
             font-weight: 700;
+            text-transform: uppercase;
+            color: #7EC8E3;
+            letter-spacing: 0.3px;
+            margin-right: 6px;
+            font-size: 11px;
         }
-        
-        .striker-icon {
-            color: #F3A900;
-            margin-right: 4px;
-            font-size: 0.8em;
-        }
-        
-        .bowler-section {
-            border-left: 1px solid rgba(255,255,255,0.2); 
-            padding-left: 15px;
-            margin-left: auto; /* Pushes bowler to the right if space allows */
+        .bowler-fig {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            color: #7EC8E3;
+            line-height: 1;
         }
 
-        /* Mobile specific overrides */
-        @media (max-width: 768px) {
-            .scoreboard-wrapper {
-                flex-direction: column;
-            }
-            .teams-block::after {
-                display: none;
-            }
-            .teams-block {
-                padding: 6px;
-            }
-            .status-block {
-                border-left: none;
-                border-top: 1px solid rgba(255,255,255,0.1);
-                padding: 6px;
-                flex-direction: column;
-                gap: 4px;
-            }
-            .bowler-section {
-                border-left: none;
-                padding-left: 0;
-                margin-left: 0;
-            }
-            .player-info-wrapper {
-                justify-content: space-evenly;
-            }
+        /* ── MAIN SCOREBOARD ── */
+        .scoreboard-wrapper {
+            display: flex;
+            align-items: stretch;
+            height: 74px;
+            /* 3-px gold top accent line via box-shadow inset */
+            box-shadow:
+                0 -3px 0 0 #F3A900 inset,
+                0 14px 45px rgba(0,0,0,0.9),
+                0 1px 0 rgba(255,255,255,0.04) inset;
+            background: linear-gradient(100deg, #060E1C 0%, #0C1A30 25%, #122040 50%, #0C1A30 75%, #060E1C 100%);
+            border: 1px solid rgba(243,169,0,0.18);
+            border-top: none; /* top accent via box-shadow */
+            border-bottom: 3px solid #F3A900;
+            border-radius: 0 0 10px 10px;
+            opacity: 0;
+            animation: slideUp 0.9s forwards ease-out 0.5s;
+            overflow: hidden;
+        }
+
+        /* ── TEAMS BLOCK ── */
+        .teams-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(140deg, #F7B000 0%, #E89800 55%, #CC7E00 100%);
+            padding: 0 20px 0 24px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        /* Angled right chevron */
+        .teams-block::after {
+            content: '';
+            position: absolute;
+            top: 0; right: -14px; bottom: 0;
+            width: 22px;
+            background: linear-gradient(140deg, #E89800 0%, #CC7E00 100%);
+            transform: skewX(-8deg);
+            z-index: 0;
+        }
+
+        .team-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .team-abbrev {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(24px, 3.8vw, 38px);
+            font-weight: 700;
+            color: #0C1928;
+            line-height: 1;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+
+        .team-fullname {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(6px, 0.8vw, 8.5px);
+            font-weight: 700;
+            color: rgba(12, 25, 40, 0.65);
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .vs-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(9px, 1.1vw, 11px);
+            font-weight: 800;
+            color: rgba(12, 25, 40, 0.45);
+            z-index: 1;
+            padding: 2px 0;
+        }
+
+        /* ── SCORE BLOCK ── */
+        .score-block {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 16px;
+            z-index: 1;
+        }
+
+        .score-main {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .s-runs {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(40px, 7.5vw, 62px);
+            font-weight: 600;
+            color: #FFFFFF;
+            line-height: 1;
+            text-shadow: 0 0 35px rgba(255,255,255,0.15), 2px 3px 8px rgba(0,0,0,0.7);
+            white-space: nowrap;
+            letter-spacing: -1px;
+        }
+        .s-slash {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(30px, 5.5vw, 48px);
+            font-weight: 400;
+            color: rgba(255,255,255,0.25);
+            line-height: 1;
+            padding: 0 1px;
+        }
+        .s-wickets {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(40px, 7.5vw, 62px);
+            font-weight: 600;
+            color: #FF6535;
+            line-height: 1;
+            text-shadow: 0 0 25px rgba(255, 101, 53, 0.45), 2px 3px 8px rgba(0,0,0,0.7);
+            white-space: nowrap;
+            letter-spacing: -1px;
+        }
+        .s-overs {
+            font-family: 'Roboto', sans-serif;
+            font-size: clamp(11px, 1.8vw, 15px);
+            font-weight: 500;
+            color: #5A7A9A;
+            white-space: nowrap;
+            padding-top: 4px;
+        }
+
+        /* ── STATUS BLOCK ── */
+        .status-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 0 22px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.3));
+            border-left: 1px solid rgba(243,169,0,0.12);
+            min-width: 130px;
+            flex-shrink: 0;
+        }
+
+        .live-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #C91C1C;
+            background: linear-gradient(135deg, #DC2626, #B91C1C);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            animation: livePulse 2s infinite;
+            white-space: nowrap;
+        }
+        .live-dot {
+            width: 5px; height: 5px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .stale-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            background: #3A3A3A;
+            color: #999;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        #status {
+            font-family: 'Roboto', sans-serif;
+            font-size: clamp(9px, 1.4vw, 11.5px);
+            font-weight: 700;
+            color: #6A8BAA;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 155px;
+        }
+        #target-info {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(13px, 2vw, 18px);
+            font-weight: 600;
+            color: #F3A900;
+            letter-spacing: 0.5px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+            /* Score bar */
+            .scoreboard-wrapper { height: auto; min-height: 64px; }
+            .teams-block::after { display: none; }
+            .team-fullname { display: none; }
+            .status-block { min-width: 80px; padding: 6px 12px; }
+
+            /* Player bar — compact mobile layout */
+            .player-info-wrapper { padding: 0 10px; gap: 0; height: 30px; }
+
+            /* Hide labels — save space */
+            .section-label { display: none !important; }
+
+            /* Hide non-striker — only show the batsman at crease */
+            #batsman2-container { display: none !important; }
+
+            /* Tighter padding between cells */
+            .player-detail { padding: 0 7px; }
+
+            /* Separator between batsman and bowler */
+            #bowler-container { border-left: 1px solid rgba(255,255,255,0.1); }
         }
     </style>
 </head>
 <body>
+<div class="overlay-container">
 
-  <div class="overlay-container">
-    <!-- Top Player Stats Bar -->
-    <div class="player-info-wrapper" id="player-info" style="display: none;">
+    <!-- Player Stats Bar -->
+    <div class="player-info-wrapper" id="player-info" style="display:none;">
+
+        <span class="section-label batting">Batting</span>
+
         <div class="player-detail" id="batsman1-container">
-            <span class="striker-icon" id="batsman1-striker">▶</span>
-            <span class="player-name" id="batsman1-name">---</span>
-            <span class="player-stats" id="batsman1-score">- (-)</span>
+            <span class="striker-dot" id="batsman1-striker"></span>
+            <span class="p-name" id="batsman1-name">---</span>
+            <span class="p-runs" id="batsman1-runs">-</span>
+            <span class="p-balls" id="batsman1-balls">(-)</span>
         </div>
+
         <div class="player-detail" id="batsman2-container">
-            <span class="striker-icon" id="batsman2-striker" style="display:none;">▶</span>
-            <span class="player-name" id="batsman2-name">---</span>
-            <span class="player-stats" id="batsman2-score">- (-)</span>
+            <span class="striker-dot" id="batsman2-striker" style="visibility:hidden;"></span>
+            <span class="p-name" id="batsman2-name">---</span>
+            <span class="p-runs" id="batsman2-runs">-</span>
+            <span class="p-balls" id="batsman2-balls">(-)</span>
         </div>
-        <div class="player-detail bowler-section" id="bowler-container">
-            <span class="player-name" style="color: #94A3B8; font-size: 0.9em; display:none;" id="bowler-label">BOWLER:</span>
-            <span class="player-name" id="bowler-name" style="color: #88A6D6; margin-left: 3px;">---</span>
-            <span class="player-stats" id="bowler-stats" style="margin-left: 3px;">-/- (-)</span>
+
+        <div class="bar-spacer"></div>
+
+        <div class="player-detail" id="bowler-container">
+            <span class="section-label bowling">Bowling</span>
+            <span class="bowler-name-text" id="bowler-name">---</span>
+            <span class="bowler-fig" id="bowler-stats">-/-</span>
         </div>
+
     </div>
 
     <!-- Main Score Bar -->
     <div class="scoreboard-wrapper" id="scoreboard">
-        <div class="teams-block">
-            <span id="teams" style="z-index: 1;">Connecting...</span>
+
+        <div class="teams-block" id="teams-block">
+            <div class="team-side">
+                <span class="team-abbrev" id="team1-abbrev">—</span>
+                <span class="team-fullname" id="team1-fullname"></span>
+            </div>
+            <span class="vs-text">v</span>
+            <div class="team-side">
+                <span class="team-abbrev" id="team2-abbrev">—</span>
+                <span class="team-fullname" id="team2-fullname"></span>
+            </div>
         </div>
+
         <div class="score-block">
-            <span class="score-number" id="score-runs">--/--</span>
-            <span class="overs-number" id="score-overs">(0.0 Ov)</span>
+            <div class="score-main">
+                <span class="s-runs" id="score-runs">--</span>
+                <span class="s-slash" id="score-slash">/</span>
+                <span class="s-wickets" id="score-wickets">--</span>
+            </div>
+            <span class="s-overs" id="score-overs"></span>
         </div>
+
         <div class="status-block">
-            <span id="status">WAITING...</span>
-            <div class="live-indicator"><span class="live-dot"></span>LIVE</div>
+            <div class="live-pill" id="live-indicator"><span class="live-dot"></span>LIVE</div>
             <div class="stale-indicator" id="stale-indicator">⚠ OFFLINE</div>
+            <span id="status">CONNECTING...</span>
+            <span id="target-info" style="display:none;"></span>
         </div>
+
     </div>
-  </div>
+</div>
 
-    <script>
-        let KVDB_URL = null;
-        let isHidden = false;
+<script>
+    let KVDB_URL = null;
+    let isHidden = false;
 
-        // Load KVDB URL from config.json so it doesn't need to be hardcoded here
-        async function loadConfig() {
-            try {
-                const res = await fetch('config.json', { cache: 'no-store' });
-                if (res.ok) {
-                    const cfg = await res.json();
-                    KVDB_URL = cfg.kvdb_url;
-                }
-            } catch (e) {
-                console.warn("Could not load config.json, KVDB_URL not set.", e);
+    async function loadConfig() {
+        try {
+            const res = await fetch('config.json', { cache: 'no-store' });
+            if (res.ok) { const cfg = await res.json(); KVDB_URL = cfg.kvdb_url; }
+        } catch (e) { console.warn("Could not load config.json", e); }
+    }
+
+    // Auto-generate 2–3 letter abbreviation (e.g. "Team E- Super Sapphire" → "SS")
+    function makeAbbrev(name) {
+        let clean = name
+            .replace(/^Team\s+\w+\s*[-–]\s*/i, '')
+            .replace(/^Team\s+\w+\s+(?=\S)/i, '')
+            .trim();
+        if (!clean || clean.length < 2) clean = name;
+        const skip = new Set(['team','a','an','the','of','in','and','&','since','de','fc','sc','cc','xi']);
+        const words = clean.split(/\s+/).filter(w => w.length > 0);
+        const sig = words.filter(w => !skip.has(w.toLowerCase()));
+        if (sig.length >= 2) return sig.map(w => w[0]).slice(0, 3).join('').toUpperCase();
+        if (sig.length === 1) return sig[0].slice(0, 3).toUpperCase();
+        return clean.slice(0, 3).toUpperCase();
+    }
+
+    // Strip "Team X-" or "Team X " prefix for the small full-name label
+    // Uses \S+ so it handles both "Team A Diamond" (no dash) and "Team E- Super" (with dash)
+    function shortName(name) {
+        return name.replace(/^Team\s+\S+[\s\-–]+/i, '').trim() || name;
+    }
+
+    function setScore(raw) {
+        const parts = (raw || '--').split('/');
+        document.getElementById('score-runs').innerText = parts[0] ?? '--';
+        if (parts.length > 1) {
+            document.getElementById('score-slash').style.display = 'inline';
+            document.getElementById('score-wickets').style.display = 'inline';
+            document.getElementById('score-wickets').innerText = parts[1].split(' ')[0];
+        } else {
+            document.getElementById('score-slash').style.display = 'none';
+            document.getElementById('score-wickets').style.display = 'none';
+        }
+    }
+
+    function hideOverlay() {
+        if (isHidden) return;
+        isHidden = true;
+        document.getElementById('player-info').classList.add('hiding');
+        document.getElementById('scoreboard').classList.add('hiding');
+        setTimeout(() => { document.querySelector('.overlay-container').style.display = 'none'; }, 1300);
+    }
+    function showOverlay() {
+        if (!isHidden) return;
+        isHidden = false;
+        document.querySelector('.overlay-container').style.display = '';
+        document.getElementById('player-info').classList.remove('hiding');
+        document.getElementById('scoreboard').classList.remove('hiding');
+    }
+
+    const STALE_THRESHOLD_SECS = 180;
+    function checkStaleness(data) {
+        const staleEl = document.getElementById('stale-indicator');
+        if (!data.last_updated) { staleEl.style.display = 'none'; return; }
+        const ageSecs = (Date.now() / 1000) - data.last_updated;
+        if (ageSecs > STALE_THRESHOLD_SECS) {
+            staleEl.style.display = 'flex';
+            document.getElementById('live-indicator').style.display = 'none';
+        } else {
+            staleEl.style.display = 'none';
+        }
+    }
+
+    async function fetchScore() {
+        if (!KVDB_URL) return;
+        try {
+            const res = await fetch(KVDB_URL + "?_=" + Date.now(), { cache: "no-store" });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            checkStaleness(data);
+
+            // Teams
+            if (data.team1 && data.team2) {
+                document.getElementById('team1-abbrev').innerText  = makeAbbrev(data.team1);
+                document.getElementById('team1-fullname').innerText = shortName(data.team1);
+                document.getElementById('team2-abbrev').innerText  = makeAbbrev(data.team2);
+                document.getElementById('team2-fullname').innerText = shortName(data.team2);
             }
-        }
 
-        function hideOverlay() {
-            if (isHidden) return;
-            isHidden = true;
-            // Slide down the entire overlay container gracefully
-            document.getElementById('player-info').classList.add('hiding');
-            document.getElementById('scoreboard').classList.add('hiding');
-            setTimeout(() => {
-                document.querySelector('.overlay-container').style.display = 'none';
-            }, 1300);
-        }
+            // Score
+            const scoreParts = (data.score || '--').split(' ');
+            setScore(scoreParts[0]);
+            document.getElementById('score-overs').innerText = scoreParts.slice(1).join(' ');
 
-        function showOverlay() {
-            if (!isHidden) return;
-            isHidden = false;
-            document.querySelector('.overlay-container').style.display = 'block';
-            document.getElementById('player-info').classList.remove('hiding');
-            document.getElementById('scoreboard').classList.remove('hiding');
-        }
+            const stat = (data.status || '').replace('LIVE', '').trim();
 
-        // If scraper hasn't written in 3× the standby interval (3 min), flag as offline.
-        // This catches a killed/crashed scraper that left stale live data in KVDB.
-        const STALE_THRESHOLD_SECS = 180;
+            // 1. ALL DONE
+            if (data.all_done) { hideOverlay(); return; }
 
-        function checkStaleness(data) {
-            const staleEl = document.getElementById('stale-indicator');
-            if (!data.last_updated) { staleEl.style.display = 'none'; return; }
-            const ageSecs = (Date.now() / 1000) - data.last_updated;
-            if (ageSecs > STALE_THRESHOLD_SECS) {
-                staleEl.style.display = 'flex';
-                document.querySelector('.live-indicator').style.display = 'none';
+            // 2. STANDBY
+            if (data.no_live && !data.all_done) {
+                showOverlay();
+                document.getElementById('team1-abbrev').innerText  = '⏳';
+                document.getElementById('team1-fullname').innerText = '';
+                document.getElementById('team2-abbrev').innerText  = '';
+                document.getElementById('team2-fullname').innerText = 'Starting Soon';
+                setScore('--');
+                document.getElementById('score-overs').innerText = '';
+                document.getElementById('status').innerText = 'STANDBY';
+                document.getElementById('target-info').style.display = 'none';
+                document.getElementById('live-indicator').style.display = 'none';
+                document.getElementById('player-info').style.display = 'none';
+                document.getElementById('scoreboard').style.borderRadius = '10px';
+                return;
+            }
+
+            // 3. MATCH ENDED
+            if (data.ended) {
+                showOverlay();
+                document.getElementById('status').innerText = stat || data.status;
+                document.getElementById('target-info').style.display = 'none';
+                document.getElementById('live-indicator').style.display = 'none';
+                document.getElementById('player-info').style.display = 'none';
+                document.getElementById('scoreboard').style.borderRadius = '10px';
+                return;
+            }
+
+            // 4. LIVE
+            showOverlay();
+            document.getElementById('live-indicator').style.display = 'flex';
+            document.getElementById('status').innerText = stat || 'IN PROGRESS';
+
+            // Show target for 2nd innings, hide for 1st
+            const targetEl = document.getElementById('target-info');
+            if (data.target) {
+                targetEl.innerText = 'Target: ' + data.target;
+                targetEl.style.display = 'block';
             } else {
-                staleEl.style.display = 'none';
+                targetEl.style.display = 'none';
             }
-        }
 
-        async function fetchScore() {
-            if (!KVDB_URL) return; // Config not loaded yet
-            try {
-                // cache: no-store prevents the browser from caching the response, ensuring live refresh!
-                const response = await fetch(KVDB_URL, { cache: "no-store" });
-                if (response.ok) {
-                    const data = await response.json();
+            const batsmen = Array.isArray(data.batsmen) ? data.batsmen : [];
+            const bowlers = Array.isArray(data.bowlers) ? data.bowlers : [];
 
-                    checkStaleness(data);
+            if (batsmen.length > 0) {
+                document.getElementById('player-info').style.display = 'flex';
+                document.getElementById('scoreboard').style.borderRadius = '0 0 10px 10px';
 
-                    // -- TEAM NAMES --
-                    let teamString = "";
-                    if (data.team1 && data.team2) {
-                        teamString = data.team1 + " v " + data.team2;
-                    } else {
-                        teamString = "MATCH IN PROGRESS";
-                    }
-                    document.getElementById('teams').innerText = teamString;
-                    
-                    // -- SCORE --
-                    let scoreRaw = data.score || "--/--";
-                    let scoreParts = scoreRaw.split(" ");
-                    let mainScore = scoreParts[0]; 
-                    let oversRemaining = scoreParts.slice(1).join(" "); 
+                const b1 = batsmen[0];
+                document.getElementById('batsman1-name').innerText   = b1.name || '-';
+                document.getElementById('batsman1-runs').innerText   = b1.runs ?? '-';
+                document.getElementById('batsman1-balls').innerText  = '(' + (b1.balls ?? '-') + ')';
+                document.getElementById('batsman1-striker').style.visibility = b1.striker ? 'visible' : 'hidden';
 
-                    document.getElementById('score-runs').innerText = mainScore;
-                    document.getElementById('score-overs').innerText = oversRemaining;
-
-                    // -- STATUS --
-                    let stat = data.status || "";
-
-                    // 1. ALL DONE — match day is over, hide overlay after 15 mins of silence
-                    if (data.all_done) {
-                        hideOverlay();
-                        return;
-                    }
-
-                    // 2. STANDBY — between matches, show waiting state
-                    if (data.no_live && !data.all_done) {
-                        showOverlay();
-                        document.getElementById('teams').innerText = "Next Match — Starting Soon";
-                        document.getElementById('score-runs').innerText = "⏳";
-                        document.getElementById('score-overs').innerText = "";
-                        document.getElementById('status').innerText = "STANDBY";
-                        document.querySelector('.live-indicator').style.display = 'none';
-                        document.getElementById('player-info').style.display = 'none';
-                        document.getElementById('scoreboard').style.borderRadius = '8px';
-                        return;
-                    }
-
-                    // 3. MATCH ENDED
-                    if (data.ended) {
-                        showOverlay();
-                        document.getElementById('status').innerText = stat;
-                        document.querySelector('.live-indicator').style.display = 'none';
-                        document.getElementById('player-info').style.display = 'none';
-                        document.getElementById('scoreboard').style.borderRadius = '8px';
-
-                    // 4. MATCH LIVE — normal live state
-                    } else {
-                        showOverlay();
-                        document.querySelector('.live-indicator').style.display = 'flex';
-                        stat = stat.replace("LIVE", "").trim();
-                        document.getElementById('status').innerText = stat !== "" ? stat : "IN PROGRESS";
-                        
-                        // -- BATSMEN & BOWLERS --
-                        const batsmen = Array.isArray(data.batsmen) ? data.batsmen : [];
-                        const bowlers = Array.isArray(data.bowlers) ? data.bowlers : [];
-
-                        if (batsmen.length > 0) {
-                            document.getElementById('player-info').style.display = 'flex';
-                            document.getElementById('scoreboard').style.borderRadius = '0 0 8px 8px';
-
-                            // To save horizontal space on mobile, hide the 'BOWLER:' label if small screen
-                            if (window.innerWidth < 600) {
-                                document.getElementById('bowler-label').style.display = 'none';
-                            } else {
-                                document.getElementById('bowler-label').style.display = 'inline';
-                            }
-
-                            // Batsman 1
-                            let b1 = batsmen[0];
-                            document.getElementById('batsman1-name').innerText = b1.name || '-';
-                            document.getElementById('batsman1-score').innerText = (b1.runs ?? '-') + " (" + (b1.balls ?? '-') + ")";
-                            document.getElementById('batsman1-striker').style.display = b1.striker ? 'inline' : 'none';
-
-                            // Batsman 2
-                            if (batsmen.length > 1) {
-                                document.getElementById('batsman2-container').style.display = 'flex';
-                                let b2 = batsmen[1];
-                                document.getElementById('batsman2-name').innerText = b2.name || '-';
-                                document.getElementById('batsman2-score').innerText = (b2.runs ?? '-') + " (" + (b2.balls ?? '-') + ")";
-                                document.getElementById('batsman2-striker').style.display = b2.striker ? 'inline' : 'none';
-                            } else {
-                                document.getElementById('batsman2-container').style.display = 'none';
-                            }
-
-                            // Bowler
-                            if (bowlers.length > 0) {
-                                document.getElementById('bowler-container').style.display = 'flex';
-                                let bowl = bowlers[0];
-                                document.getElementById('bowler-name').innerText = bowl.name || '-';
-                                document.getElementById('bowler-stats').innerText = (bowl.wickets ?? '-') + "-" + (bowl.runs ?? '-') + " (" + (bowl.overs ?? '-') + ")";
-                            } else {
-                                document.getElementById('bowler-container').style.display = 'none';
-                            }
-                        } else {
-                            document.getElementById('player-info').style.display = 'none';
-                            document.getElementById('scoreboard').style.borderRadius = '8px';
-                        }
-                    }
+                if (batsmen.length > 1) {
+                    document.getElementById('batsman2-container').style.display = 'flex';
+                    const b2 = batsmen[1];
+                    document.getElementById('batsman2-name').innerText   = b2.name || '-';
+                    document.getElementById('batsman2-runs').innerText   = b2.runs ?? '-';
+                    document.getElementById('batsman2-balls').innerText  = '(' + (b2.balls ?? '-') + ')';
+                    document.getElementById('batsman2-striker').style.visibility = b2.striker ? 'visible' : 'hidden';
+                } else {
+                    document.getElementById('batsman2-container').style.display = 'none';
                 }
-            } catch (err) {
-                console.log("Waiting for score update...", err);
-            }
-        }
 
-        // Load config then start polling
-        loadConfig().then(() => {
-            fetchScore();
-            setInterval(fetchScore, 10000);
-        });
-    </script>
+                if (bowlers.length > 0) {
+                    document.getElementById('bowler-container').style.display = 'flex';
+                    const bowl = bowlers[0];
+                    // Fix scraper sending "0.1.0" format → take only first two dot-parts
+                    const oversClean = String(bowl.overs || '-').split('.').slice(0, 2).join('.');
+                    document.getElementById('bowler-name').innerText  = (bowl.name || '-').trim();
+                    document.getElementById('bowler-stats').innerText =
+                        (bowl.wickets ?? '-') + '/' + (bowl.runs ?? '-') + ' (' + oversClean + ')';
+                } else {
+                    document.getElementById('bowler-container').style.display = 'none';
+                }
+            } else {
+                document.getElementById('player-info').style.display = 'none';
+                document.getElementById('scoreboard').style.borderRadius = '10px';
+            }
+
+        } catch (err) {
+            console.log("Waiting for score update...", err);
+        }
+    }
+
+    loadConfig().then(() => {
+        fetchScore();
+        setInterval(fetchScore, 10000);
+    });
+</script>
 </body>
 </html>

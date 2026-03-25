@@ -1,0 +1,11 @@
+{
+  "kvdb_url": "https://kvdb.io/YOUR_BUCKET_ID/score",
+  "tournament_id": "1860056",
+  "tournament_slug": "your-tournament-slug",
+  "poll_interval_live": 10,
+  "poll_interval_standby": 60,
+  "no_live_timeout": 15,
+  "headless": false,
+  "telegram_bot_token": "YOUR_BOT_TOKEN_HERE",
+  "telegram_chat_id": ""
+}

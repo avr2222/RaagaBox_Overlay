@@ -36,11 +36,15 @@ with open("config.json", "r") as f:
     CONFIG = json.load(f)
 
 KVDB_URL           = CONFIG["kvdb_url"]
-TOURNAMENT_URL     = CONFIG["tournament_url"]
 POLL_LIVE          = CONFIG.get("poll_interval_live", 10)
 POLL_STANDBY       = CONFIG.get("poll_interval_standby", 60)
 NO_LIVE_TIMEOUT    = CONFIG.get("no_live_timeout", 15)
 HEADLESS           = CONFIG.get("headless", False)
+
+# Build tournament URL from id + slug — you only need to update these two fields in config.json
+TOURNAMENT_ID      = CONFIG["tournament_id"]
+TOURNAMENT_SLUG    = CONFIG["tournament_slug"]
+TOURNAMENT_URL     = f"https://cricheroes.com/tournament/{TOURNAMENT_ID}/{TOURNAMENT_SLUG}"
 # -------------------
 
 
@@ -114,14 +118,12 @@ def extract_score_from_next_data(page):
             current_overs = team_b['innings'][0].get('summary', {}).get('over', '')
 
         # Build the display score
+        target_runs = None
         if current_inning == 2 and team_b_summary != '--':
             # 2nd innings: show batting team score with target info
             display_score = f"{team_b_summary} {current_overs}"
-            target = int(team_a_summary.split('/')[0]) + 1 if '/' in team_a_summary else ''
-            if target:
-                display_status = f"Target: {target} | {team_a_name}: {team_a_summary}"
-            else:
-                display_status = f"{team_a_name}: {team_a_summary}"
+            target_runs = int(team_a_summary.split('/')[0]) + 1 if '/' in team_a_summary else None
+            display_status = f"Target: {target_runs}" if target_runs else f"{team_a_name}: {team_a_summary}"
         else:
             # 1st innings
             display_score = f"{team_a_summary} {current_overs}"
@@ -164,7 +166,10 @@ def extract_score_from_next_data(page):
             'team1': team_a_name,
             'team2': team_b_name,
             'score': display_score,
-            'status': display_status if status != 'live' else 'LIVE',
+            'status': display_status,
+            'target': target_runs,           # None for 1st innings, int for 2nd
+            'innings': current_inning,
+            'team1_score': team_a_summary,   # 1st innings total, useful in 2nd innings display
             'ended': False,
             'batsmen': parsed_batsmen,
             'bowlers': parsed_bowlers
@@ -174,12 +179,16 @@ def extract_score_from_next_data(page):
         return None
 
 
+HEARTBEAT_INTERVAL = 90  # Seconds — push even if no score change, to keep last_updated fresh
+
+
 def scrape_live_match(page, match_url):
     logger.info(f"--- SCRAPING LIVE MATCH ---")
     logger.info(f"URL: {match_url}")
-    page.goto(match_url)
+    page.goto(match_url, timeout=60000)
 
     last_hash = ""
+    last_push_time = 0.0
     while True:
         try:
             page.wait_for_timeout(3000)
@@ -194,11 +203,18 @@ def scrape_live_match(page, match_url):
                     return
 
                 current_hash = _payload_hash(data)
+                now = time.time()
+                heartbeat_due = (now - last_push_time) >= HEARTBEAT_INTERVAL
 
                 if current_hash != last_hash:
                     push_to_kvdb(data)
                     logger.info(f"Broadcasted -> {data['team1']} vs {data['team2']}: {data['score']} ({data['status']})")
                     last_hash = current_hash
+                    last_push_time = now
+                elif heartbeat_due:
+                    push_to_kvdb(data)
+                    logger.debug(f"Heartbeat push ({data['score']})")
+                    last_push_time = now
                 else:
                     logger.debug(f"No change ({data['score']})")
             else:
@@ -210,8 +226,11 @@ def scrape_live_match(page, match_url):
         logger.debug(f"Wait {POLL_LIVE}s...")
         time.sleep(POLL_LIVE)
         # Re-navigate instead of reload to avoid Cloudflare blocks
-        page.goto(match_url)
-        page.wait_for_timeout(5000)
+        try:
+            page.goto(match_url, timeout=60000)
+            page.wait_for_timeout(5000)
+        except Exception as e:
+            logger.warning(f"Re-navigation timeout/error, retrying next cycle: {e}")
 
 
 def main():
@@ -241,11 +260,16 @@ def main():
                 page.wait_for_timeout(5000)  # Wait for page to load fully
 
                 # Find all links on the page that point to a live match
+                # Must contain the tournament slug to avoid following matches
+                # from other tournaments that may appear on the same page.
                 live_match_url = None
                 links = page.locator('a').all()
                 for link in links:
                     href = link.get_attribute('href')
-                    if href and "/scorecard/" in href and "live" in href.lower():
+                    if (href
+                            and "/scorecard/" in href
+                            and "live" in href.lower()
+                            and TOURNAMENT_SLUG in href):
                         if href.startswith("/"):
                             live_match_url = "https://cricheroes.com" + href
                         elif not href.startswith("http"):
