@@ -553,15 +553,7 @@
             }
 
             // 3. MATCH ENDED
-            if (data.ended) {
-                showOverlay();
-                document.getElementById('status').innerText = stat || data.status;
-                document.getElementById('target-info').style.display = 'none';
-                document.getElementById('live-indicator').style.display = 'none';
-                document.getElementById('player-info').style.display = 'none';
-                document.getElementById('scoreboard').style.borderRadius = '10px';
-                return;
-            }
+            if (data.ended) { hideOverlay(); return; }
 
             // 4. LIVE
             showOverlay();
