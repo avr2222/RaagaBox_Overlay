@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import playwright, requests; print\\(''deps OK''\\)\")",
+      "Bash(start \"\" \"overlay.html\")",
+      "Bash(python scraper.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/overlay.html)",
+      "Bash(cmd /c start \"\" \"http://localhost:8080/overlay.html\")",
+      "Bash(netstat -ano)",
+      "Bash(curl -s \"https://kvdb.io/BYZVP2VXarW5EsxpLJoD9M/score\")",
+      "Bash(tasklist)",
+      "Bash(taskkill /PID 36732 /F)",
+      "Bash(taskkill /PID 20076 /F)",
+      "Bash(taskkill /PID 20148 /F)",
+      "Bash(cmd /c \"taskkill /PID 36732 /F & taskkill /PID 20076 /F & taskkill /PID 20148 /F\")",
+      "Bash(cmd /c \"taskkill /F /PID 36732\")",
+      "Bash(cmd /c \"taskkill /F /PID 20076\")",
+      "Bash(cmd /c \"taskkill /F /PID 20148\")"
+    ]
+  }
+}

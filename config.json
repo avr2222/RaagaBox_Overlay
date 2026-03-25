@@ -1,0 +1,8 @@
+{
+  "kvdb_url": "https://kvdb.io/BYZVP2VXarW5EsxpLJoD9M/score",
+  "tournament_url": "https://cricheroes.com/tournament/1935786/gsrc-sukg-league-2026",
+  "poll_interval_live": 10,
+  "poll_interval_standby": 60,
+  "no_live_timeout": 15,
+  "headless": false
+}

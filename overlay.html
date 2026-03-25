@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Score Overlay</title>
+    <!-- Modern sports fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600&family=Montserrat:wght@700;800&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            /* Keep body transparent so the video feed shows underneath! */
+            background-color: transparent !important;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden; 
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .overlay-container {
+            width: 90%;
+            max-width: 1200px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .player-info-wrapper {
+            width: 100%;
+            display: flex;
+            background: linear-gradient(90deg, #15274D, #091328);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: slideUp 1s forwards ease-out 0.8s;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            padding: 5px 10px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap; 
+            gap: 5px 15px; /* row gap, column gap */
+            font-size: clamp(10px, 2.5vw, 14px);
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+            z-index: 5;
+            min-height: 32px;
+        }
+
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(80px);
+            }
+        }
+
+        .hiding {
+            animation: slideDown 1.2s forwards ease-in !important;
+        }
+        .scoreboard-wrapper {
+            width: 100%;
+            height: auto;
+            min-height: 60px;
+            display: flex;
+            flex-direction: row;
+            background: linear-gradient(90deg, #091328 0%, #15274D 50%, #091328 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 4px solid #F3A900; 
+            border-radius: 0 0 8px 8px; /* Rounded only at bottom when player panel is shown */
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 1s forwards ease-out 0.5s; 
+            z-index: 10;
+        }
+
+        .teams-block {
+            background: linear-gradient(135deg, #F3A900 0%, #D88900 100%);
+            color: #0b1120;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(14px, 3.5vw, 22px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            text-align: center;
+        }
+
+        .teams-block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -20px;
+            bottom: 0;
+            width: 30px;
+            background: inherit;
+            transform: skewX(-20deg);
+            z-index: -1;
+        }
+
+        .score-block {
+            flex: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 15px;
+            z-index: 1;
+            flex-wrap: wrap;
+        }
+
+        .score-number {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(35px, 8vw, 58px);
+            color: #FFFFFF;
+            line-height: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-top: 5px; 
+            white-space: nowrap;
+        }
+
+        .overs-number {
+            font-family: 'Roboto', sans-serif;
+            font-size: clamp(12px, 3.5vw, 18px);
+            color: #88A6D6; 
+            font-weight: 700;
+            margin-left: 10px;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+
+        .status-block {
+            background: rgba(0,0,0,0.3);
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Roboto', sans-serif;
+            font-size: clamp(10px, 2.5vw, 14px);
+            font-weight: 700;
+            color: #C0D1EB;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex: 0.8;
+            text-align: center;
+            flex-wrap: wrap;
+        }
+
+        .live-indicator {
+            background-color: #E2211C;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            animation: pulse 1.5s infinite;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .stale-indicator {
+            background-color: #888;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 10px;
+            display: none;
+            align-items: center;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(226, 33, 28, 0.7); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(226, 33, 28, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(226, 33, 28, 0); }
+        }
+
+        .live-dot {
+            width: 5px;
+            height: 5px;
+            background-color: white;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        /* Player Stats Styling */
+        .player-detail {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+
+        .player-name {
+            font-weight: 700;
+            margin-right: 5px;
+            text-transform: uppercase;
+            color: #DDE6ED;
+        }
+
+        .player-stats {
+            color: #F3A900;
+            font-weight: 700;
+        }
+        
+        .striker-icon {
+            color: #F3A900;
+            margin-right: 4px;
+            font-size: 0.8em;
+        }
+        
+        .bowler-section {
+            border-left: 1px solid rgba(255,255,255,0.2); 
+            padding-left: 15px;
+            margin-left: auto; /* Pushes bowler to the right if space allows */
+        }
+
+        /* Mobile specific overrides */
+        @media (max-width: 768px) {
+            .scoreboard-wrapper {
+                flex-direction: column;
+            }
+            .teams-block::after {
+                display: none;
+            }
+            .teams-block {
+                padding: 6px;
+            }
+            .status-block {
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                padding: 6px;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .bowler-section {
+                border-left: none;
+                padding-left: 0;
+                margin-left: 0;
+            }
+            .player-info-wrapper {
+                justify-content: space-evenly;
+            }
+        }
+    </style>
+</head>
+<body>
+
+  <div class="overlay-container">
+    <!-- Top Player Stats Bar -->
+    <div class="player-info-wrapper" id="player-info" style="display: none;">
+        <div class="player-detail" id="batsman1-container">
+            <span class="striker-icon" id="batsman1-striker">▶</span>
+            <span class="player-name" id="batsman1-name">---</span>
+            <span class="player-stats" id="batsman1-score">- (-)</span>
+        </div>
+        <div class="player-detail" id="batsman2-container">
+            <span class="striker-icon" id="batsman2-striker" style="display:none;">▶</span>
+            <span class="player-name" id="batsman2-name">---</span>
+            <span class="player-stats" id="batsman2-score">- (-)</span>
+        </div>
+        <div class="player-detail bowler-section" id="bowler-container">
+            <span class="player-name" style="color: #94A3B8; font-size: 0.9em; display:none;" id="bowler-label">BOWLER:</span>
+            <span class="player-name" id="bowler-name" style="color: #88A6D6; margin-left: 3px;">---</span>
+            <span class="player-stats" id="bowler-stats" style="margin-left: 3px;">-/- (-)</span>
+        </div>
+    </div>
+
+    <!-- Main Score Bar -->
+    <div class="scoreboard-wrapper" id="scoreboard">
+        <div class="teams-block">
+            <span id="teams" style="z-index: 1;">Connecting...</span>
+        </div>
+        <div class="score-block">
+            <span class="score-number" id="score-runs">--/--</span>
+            <span class="overs-number" id="score-overs">(0.0 Ov)</span>
+        </div>
+        <div class="status-block">
+            <span id="status">WAITING...</span>
+            <div class="live-indicator"><span class="live-dot"></span>LIVE</div>
+            <div class="stale-indicator" id="stale-indicator">⚠ OFFLINE</div>
+        </div>
+    </div>
+  </div>
+
+    <script>
+        let KVDB_URL = null;
+        let isHidden = false;
+
+        // Load KVDB URL from config.json so it doesn't need to be hardcoded here
+        async function loadConfig() {
+            try {
+                const res = await fetch('config.json', { cache: 'no-store' });
+                if (res.ok) {
+                    const cfg = await res.json();
+                    KVDB_URL = cfg.kvdb_url;
+                }
+            } catch (e) {
+                console.warn("Could not load config.json, KVDB_URL not set.", e);
+            }
+        }
+
+        function hideOverlay() {
+            if (isHidden) return;
+            isHidden = true;
+            // Slide down the entire overlay container gracefully
+            document.getElementById('player-info').classList.add('hiding');
+            document.getElementById('scoreboard').classList.add('hiding');
+            setTimeout(() => {
+                document.querySelector('.overlay-container').style.display = 'none';
+            }, 1300);
+        }
+
+        function showOverlay() {
+            if (!isHidden) return;
+            isHidden = false;
+            document.querySelector('.overlay-container').style.display = 'block';
+            document.getElementById('player-info').classList.remove('hiding');
+            document.getElementById('scoreboard').classList.remove('hiding');
+        }
+
+        // If scraper hasn't written in 3× the standby interval (3 min), flag as offline.
+        // This catches a killed/crashed scraper that left stale live data in KVDB.
+        const STALE_THRESHOLD_SECS = 180;
+
+        function checkStaleness(data) {
+            const staleEl = document.getElementById('stale-indicator');
+            if (!data.last_updated) { staleEl.style.display = 'none'; return; }
+            const ageSecs = (Date.now() / 1000) - data.last_updated;
+            if (ageSecs > STALE_THRESHOLD_SECS) {
+                staleEl.style.display = 'flex';
+                document.querySelector('.live-indicator').style.display = 'none';
+            } else {
+                staleEl.style.display = 'none';
+            }
+        }
+
+        async function fetchScore() {
+            if (!KVDB_URL) return; // Config not loaded yet
+            try {
+                // cache: no-store prevents the browser from caching the response, ensuring live refresh!
+                const response = await fetch(KVDB_URL, { cache: "no-store" });
+                if (response.ok) {
+                    const data = await response.json();
+
+                    checkStaleness(data);
+
+                    // -- TEAM NAMES --
+                    let teamString = "";
+                    if (data.team1 && data.team2) {
+                        teamString = data.team1 + " v " + data.team2;
+                    } else {
+                        teamString = "MATCH IN PROGRESS";
+                    }
+                    document.getElementById('teams').innerText = teamString;
+                    
+                    // -- SCORE --
+                    let scoreRaw = data.score || "--/--";
+                    let scoreParts = scoreRaw.split(" ");
+                    let mainScore = scoreParts[0]; 
+                    let oversRemaining = scoreParts.slice(1).join(" "); 
+
+                    document.getElementById('score-runs').innerText = mainScore;
+                    document.getElementById('score-overs').innerText = oversRemaining;
+
+                    // -- STATUS --
+                    let stat = data.status || "";
+
+                    // 1. ALL DONE — match day is over, hide overlay after 15 mins of silence
+                    if (data.all_done) {
+                        hideOverlay();
+                        return;
+                    }
+
+                    // 2. STANDBY — between matches, show waiting state
+                    if (data.no_live && !data.all_done) {
+                        showOverlay();
+                        document.getElementById('teams').innerText = "Next Match — Starting Soon";
+                        document.getElementById('score-runs').innerText = "⏳";
+                        document.getElementById('score-overs').innerText = "";
+                        document.getElementById('status').innerText = "STANDBY";
+                        document.querySelector('.live-indicator').style.display = 'none';
+                        document.getElementById('player-info').style.display = 'none';
+                        document.getElementById('scoreboard').style.borderRadius = '8px';
+                        return;
+                    }
+
+                    // 3. MATCH ENDED
+                    if (data.ended) {
+                        showOverlay();
+                        document.getElementById('status').innerText = stat;
+                        document.querySelector('.live-indicator').style.display = 'none';
+                        document.getElementById('player-info').style.display = 'none';
+                        document.getElementById('scoreboard').style.borderRadius = '8px';
+
+                    // 4. MATCH LIVE — normal live state
+                    } else {
+                        showOverlay();
+                        document.querySelector('.live-indicator').style.display = 'flex';
+                        stat = stat.replace("LIVE", "").trim();
+                        document.getElementById('status').innerText = stat !== "" ? stat : "IN PROGRESS";
+                        
+                        // -- BATSMEN & BOWLERS --
+                        const batsmen = Array.isArray(data.batsmen) ? data.batsmen : [];
+                        const bowlers = Array.isArray(data.bowlers) ? data.bowlers : [];
+
+                        if (batsmen.length > 0) {
+                            document.getElementById('player-info').style.display = 'flex';
+                            document.getElementById('scoreboard').style.borderRadius = '0 0 8px 8px';
+
+                            // To save horizontal space on mobile, hide the 'BOWLER:' label if small screen
+                            if (window.innerWidth < 600) {
+                                document.getElementById('bowler-label').style.display = 'none';
+                            } else {
+                                document.getElementById('bowler-label').style.display = 'inline';
+                            }
+
+                            // Batsman 1
+                            let b1 = batsmen[0];
+                            document.getElementById('batsman1-name').innerText = b1.name || '-';
+                            document.getElementById('batsman1-score').innerText = (b1.runs ?? '-') + " (" + (b1.balls ?? '-') + ")";
+                            document.getElementById('batsman1-striker').style.display = b1.striker ? 'inline' : 'none';
+
+                            // Batsman 2
+                            if (batsmen.length > 1) {
+                                document.getElementById('batsman2-container').style.display = 'flex';
+                                let b2 = batsmen[1];
+                                document.getElementById('batsman2-name').innerText = b2.name || '-';
+                                document.getElementById('batsman2-score').innerText = (b2.runs ?? '-') + " (" + (b2.balls ?? '-') + ")";
+                                document.getElementById('batsman2-striker').style.display = b2.striker ? 'inline' : 'none';
+                            } else {
+                                document.getElementById('batsman2-container').style.display = 'none';
+                            }
+
+                            // Bowler
+                            if (bowlers.length > 0) {
+                                document.getElementById('bowler-container').style.display = 'flex';
+                                let bowl = bowlers[0];
+                                document.getElementById('bowler-name').innerText = bowl.name || '-';
+                                document.getElementById('bowler-stats').innerText = (bowl.wickets ?? '-') + "-" + (bowl.runs ?? '-') + " (" + (bowl.overs ?? '-') + ")";
+                            } else {
+                                document.getElementById('bowler-container').style.display = 'none';
+                            }
+                        } else {
+                            document.getElementById('player-info').style.display = 'none';
+                            document.getElementById('scoreboard').style.borderRadius = '8px';
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log("Waiting for score update...", err);
+            }
+        }
+
+        // Load config then start polling
+        loadConfig().then(() => {
+            fetchScore();
+            setInterval(fetchScore, 10000);
+        });
+    </script>
+</body>
+</html>
